@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>I love you</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+  canvas { display: block; width: 100%; height: 100%; }
+  button {
+    position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+    background: #1e1e1e; color: #ffb6c1; border: 1px solid #ffb6c1;
+    padding: 8px 18px; border-radius: 20px; font: 14px Arial, sans-serif; cursor: pointer;
+  }
+  button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<button id="replay">Replay</button>
+<script>
+const canvas = document.getElementById("c");
+const ctx = canvas.getContext("2d");
+const TEXT = "I love you";   // change the message here
+const COLOR = "#ffb6c1";    // text color
+const NAME = "Nadia";       // name shown inside the heart at the end
+const MS_PER_STAMP = 18;    // higher = slower drawing
+const POINTS = 120;         // points per ring
+const RINGS = [11, 12, 13, 14, 15, 16]; // heart sizes (like "scale" in the turtle code)
+
+let W, H, stamps, count, raf;
+
+function build() {
+  const dpr = window.devicePixelRatio || 1;
+  W = canvas.width = innerWidth * dpr;
+  H = canvas.height = innerHeight * dpr;
+  const unit = Math.min(W, H) / 400;          // scales to any screen
+  stamps = [];
+  for (const scale of RINGS) {
+    for (let i = 0; i < POINTS; i++) {
+      const a = (i / POINTS) * Math.PI * 2;
+      const x = 16 * Math.sin(a) ** 3;
+      const y = 13 * Math.cos(a) - 5 * Math.cos(2 * a) - 2 * Math.cos(3 * a) - Math.cos(4 * a);
+      stamps.push({
+        x: W / 2 + x * scale * unit * 0.85,
+        y: H / 2 - y * scale * unit * 0.85 + unit * 8,
+        size: 8 * unit
+      });
+    }
+  }
+}
+
+let last = 0, nameAlpha = 0, unitPx = 1;
+
+function drawName() {
+  ctx.fillStyle = "#000";
+  ctx.fillRect(W / 2 - unitPx * 80, H / 2 - unitPx * 35, unitPx * 160, unitPx * 70);
+  ctx.save();
+  ctx.globalAlpha = nameAlpha;
+  ctx.fillStyle = "#fff";
+  ctx.shadowColor = COLOR;
+  ctx.shadowBlur = 20 * unitPx;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.font = `bold ${44 * unitPx}px Georgia, serif`;
+  ctx.fillText(NAME, W / 2, H / 2 + unitPx * 4);
+  ctx.restore();
+}
+
+function draw(now) {
+  ctx.fillStyle = COLOR;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "alphabetic";
+  if (count < stamps.length) {
+    if (now - last >= MS_PER_STAMP) {
+      const s = stamps[count++];
+      ctx.font = `bold ${s.size}px Arial, sans-serif`;
+      ctx.fillText(TEXT, s.x, s.y);
+      last = now;
+    }
+  } else if (nameAlpha < 1) {
+    nameAlpha = Math.min(1, nameAlpha + 0.01);
+    drawName();
+  } else {
+    return;
+  }
+  raf = requestAnimationFrame(draw);
+}
+
+function start() {
+  cancelAnimationFrame(raf);
+  build();
+  ctx.fillStyle = "#000";
+  ctx.fillRect(0, 0, W, H);
+  count = 0; nameAlpha = 0; last = 0;
+  unitPx = Math.min(W, H) / 400;
+  raf = requestAnimationFrame(draw);
+}
+
+document.getElementById("replay").onclick = start;
+addEventListener("resize", start);
+start();
+</script>
+</body>
+</html>
